@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>통분 실력 완성 퀴즈</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; padding-top: 50px; }
+        .quiz-container { background: white; width: 500px; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        h2 { color: #2c3e50; margin-bottom: 5px; }
+        .progress { color: #7f8c8d; font-size: 0.9em; margin-bottom: 25px; }
+        .question-box { background: #f8f9fa; padding: 25px; border-radius: 15px; font-size: 2em; font-weight: bold; margin-bottom: 30px; border: 2px dashed #3498db; color: #2c3e50; }
+        .fraction-input-area { display: flex; justify-content: space-around; align-items: center; margin-bottom: 30px; }
+        .fraction-group { display: flex; flex-direction: column; align-items: center; }
+        .line { width: 80px; height: 2px; background-color: #333; margin: 5px 0; }
+        input { width: 70px; height: 40px; text-align: center; font-size: 1.2em; border: 2px solid #bdc3c7; border-radius: 8px; }
+        input:focus { border-color: #3498db; outline: none; }
+        .btn-area { margin-top: 20px; }
+        #check-btn { width: 100%; padding: 15px; background: #3498db; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; }
+        #next-btn { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; display: none; }
+        #msg { margin-top: 20px; font-weight: bold; min-height: 40px; font-size: 1.1em; }
+        .arrow { font-size: 1.5em; color: #95a5a6; }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h2>🎯 통분 스스로 하기</h2>
+    <div class="progress" id="progress">문제 1 / 10</div>
+    
+    <div class="question-box" id="question">로딩 중...</div>
+    
+    <div class="fraction-input-area">
+        <!-- 첫 번째 분수 입력 -->
+        <div class="fraction-group">
+            <input type="number" id="u-n1" placeholder="분자">
+            <div class="line"></div>
+            <input type="number" id="u-d1" placeholder="분모">
+        </div>
+
+        <div class="arrow">,</div>
+
+        <!-- 두 번째 분수 입력 -->
+        <div class="fraction-group">
+            <input type="number" id="u-n2" placeholder="분자">
+            <div class="line"></div>
+            <input type="number" id="u-d2" placeholder="분모">
+        </div>
+    </div>
+
+    <div id="msg"></div>
+    
+    <div class="btn-area">
+        <button id="check-btn" onclick="checkAnswer()">정답 확인</button>
+        <button id="next-btn" onclick="nextQuestion()">참 잘했습니다! 다음 문제 ▶</button>
+    </div>
+</div>
+
+<script>
+    // 소스(빈 문서 1.pdf)에서 추출한 문제 10개 [1]
+    const quizData = [
+        {n1: 1, n2: 2, d1: 2, d2: 7},
+        {n1: 3, n2: 1, d1: 10, d2: 6},
+        {n1: 4, n2: 2, d1: 5, d2: 3},
+        {n1: 4, n2: 5, d1: 9, d2: 6},
+        {n1: 5, n2: 3, d1: 8, d2: 5},
+        {n1: 1, n2: 2, d1: 4, d2: 3},
+        {n1: 1, n2: 3, d1: 4, d2: 8},
+        {n1: 2, n2: 5, d1: 3, d2: 6},
+        {n1: 4, n2: 2, d1: 7, d2: 11},
+        {n1: 5, n2: 4, d1: 9, d2: 15}
+    ];
+
+    let currentIdx = 0;
+    let targetLcm, correctN1, correctN2;
+
+    function gcd(a, b) { return b ? gcd(b, a % b) : a; }
+    function lcm(a, b) { return (a * b) / gcd(a, b); }
+
+    function loadQuestion() {
+        const q = quizData[currentIdx];
+        targetLcm = lcm(q.d1, q.d2); // 소스의 원리에 따른 최소공배수 계산
+        correctN1 = q.n1 * (targetLcm / q.d1);
+        correctN2 = q.n2 * (targetLcm / q.d2);
+
+        document.getElementById('progress').innerText = `문제 ${currentIdx + 1} / ${quizData.length}`;
+        document.getElementById('question').innerText = `${q.n1}/${q.d1} 와 ${q.n2}/${q.d2}`;
+
+        // 입력창 및 버튼 초기화
+        const inputs = ['u-n1', 'u-d1', 'u-n2', 'u-d2'];
+        inputs.forEach(id => {
+            document.getElementById(id).value = '';
+            document.getElementById(id).disabled = false;
+            document.getElementById(id).style.borderColor = '#bdc3c7';
+        });
+        
+        document.getElementById('msg').innerText = '';
+        document.getElementById('check-btn').style.display = 'block';
+        document.getElementById('next-btn').style.display = 'none';
+    }
+
+    function checkAnswer() {
+        const un1 = parseInt(document.getElementById('u-n1').value);
+        const ud1 = parseInt(document.getElementById('u-d1').value);
+        const un2 = parseInt(document.getElementById('u-n2').value);
+        const ud2 = parseInt(document.getElementById('u-d2').value);
+        const msg = document.getElementById('msg');
+
+        // 검증 로직: 공통분모가 최소공배수와 같고, 각 분자가 올바르게 계산되었는지 확인
+        if (ud1 === targetLcm && ud2 === targetLcm && un1 === correctN1 && un2 === correctN2) {
+            msg.innerHTML = "<span style='color: #27ae60;'>완벽합니다! 정답입니다.</span>";
+            ['u-n1', 'u-d1', 'u-n2', 'u-d2'].forEach(id => document.getElementById(id).disabled = true);
+            document.getElementById('check-btn').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'block';
+        } else {
+            if (ud1 !== ud2) {
+                msg.innerHTML = "<span style='color: #e74c3c;'>두 분모가 서로 다릅니다. 공통분모를 찾아보세요!</span>";
+            } else {
+                msg.innerHTML = "<span style='color: #e74c3c;'>다시 계산해 보세요. 분모와 분자에 같은 수를 곱했나요?</span>";
+            }
+            document.getElementById('u-d1').style.borderColor = '#e74c3c';
+            document.getElementById('u-d2').style.borderColor = '#e74c3c';
+        }
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < quizData.length) {
+            loadQuestion();
+        } else {
+            document.querySelector('.quiz-container').innerHTML = "<h2>🎊 대단해요! 🎊</h2><p>소스에 있는 모든 통분 문제를 스스로 해결했습니다.</p><button onclick='location.reload()' style='width:100%; padding:15px; background:#34495e; color:white; border:none; border-radius:10px; cursor:pointer; margin-top:20px;'>다시 도전하기</button>";
+        }
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
